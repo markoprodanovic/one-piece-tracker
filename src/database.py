@@ -10,7 +10,6 @@ This module handles all database operations including:
 
 from typing import List, Optional, Set
 from supabase import create_client, Client
-from postgrest import CountMethod
 from loguru import logger
 
 from src.config import config
@@ -97,7 +96,7 @@ class EpisodeDatabase:
             client = self._ensure_connected()
 
             # Try a simple query to test connection
-            client.table(self.table_name).select("count", count=CountMethod.exact).execute()
+            client.table(self.table_name).select("count", count="exact").execute()  # type: ignore
 
             logger.success("Database health check passed")
             return True
@@ -311,7 +310,7 @@ class EpisodeDatabase:
             logger.info("Calculating database statistics")
 
             # Get total count
-            count_response = client.table(self.table_name).select("*", count=CountMethod.exact).execute()
+            count_response = client.table(self.table_name).select("*", count="exact").execute()  # type: ignore
             total_episodes = count_response.count
 
             if total_episodes == 0:
