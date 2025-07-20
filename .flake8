@@ -1,0 +1,10 @@
+[flake8]
+max-line-length = 120
+extend-ignore = 
+    # Allow line breaks before binary operators (more readable)
+    W503,
+    # Allow line breaks after binary operators  
+    W504
+per-file-ignores =
+    # Allow unused imports in __init__.py files
+    __init__.py:F401
