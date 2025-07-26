@@ -1,13 +1,3 @@
-"""
-Database client for managing One Piece episode data in Supabase.
-
-This module handles all database operations including:
-- Connecting to Supabase
-- Inserting new episodes
-- Checking existing episodes
-- Updating episode data
-"""
-
 from typing import List, Optional, Set
 from supabase import create_client, Client
 from loguru import logger

@@ -1,10 +1,3 @@
-"""
-API client for fetching One Piece episode data.
-
-This module handles all communication with the One Piece API,
-including error handling, retries, and data validation.
-"""
-
 import asyncio
 from typing import Optional
 import httpx
@@ -15,7 +8,6 @@ from src.models import EpisodeFromAPI, APIEpisodeList
 
 
 class OnePieceAPIError(Exception):
-    """Custom exception for One Piece API related errors."""
     pass
 
 
@@ -41,16 +33,14 @@ class OnePieceAPIClient:
         self.base_url = base_url or config.one_piece_api_base_url
         self.timeout = timeout
 
-        # HTTP client configuration
         self.client = httpx.AsyncClient(
             timeout=timeout,
             headers={
-                'User-Agent': 'OnePieceTracker/1.0 (Educational Project)',
                 'Accept': 'application/json',
             }
         )
 
-        logger.info(f"Initialized One Piece API client with base URL: {self.base_url}")
+        logger.info(f"Initialized API client with base URL: {self.base_url}")
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -62,7 +52,7 @@ class OnePieceAPIClient:
 
     async def fetch_all_episodes(self) -> APIEpisodeList:
         """
-        Fetch all episodes from the One Piece API.
+        Fetch all episodes from the API.
 
         Returns:
             List of EpisodeFromAPI objects
@@ -75,13 +65,11 @@ class OnePieceAPIClient:
 
         try:
             response = await self.client.get(url)
-            response.raise_for_status()  # Raises exception for 4xx/5xx status codes
+            response.raise_for_status()
 
-            # Parse JSON response
             data = response.json()
             logger.info(f"Successfully fetched {len(data)} episodes from API")
 
-            # Validate and parse each episode
             episodes = []
             for episode_data in data:
                 try:
@@ -129,18 +117,15 @@ class OnePieceAPIClient:
         try:
             response = await self.client.get(url)
 
-            # Handle 404 (episode not found) gracefully
             if response.status_code == 404:
                 logger.info(f"Episode {episode_id} not found (404)")
                 return None
 
-            # Log the response status and content for debugging
             logger.debug(f"Response status: {response.status_code}")
             logger.debug(f"Response headers: {dict(response.headers)}")
 
             response.raise_for_status()
 
-            # Parse and validate the episode data
             try:
                 data = response.json()
                 logger.debug(f"Parsed JSON data type: {type(data)}, value: {data}")
@@ -149,12 +134,10 @@ class OnePieceAPIClient:
                 logger.debug(f"Response content: {response.text[:200]}...")
                 raise OnePieceAPIError(f"Invalid JSON response for episode {episode_id}")
 
-            # Check if response is empty or None
             if data is None:
                 logger.info(f"Episode {episode_id} returned null JSON response")
                 return None
 
-            # Check if response is an empty dict or has unexpected structure
             if not isinstance(data, dict):
                 logger.warning(f"Episode {episode_id} returned non-dict response: {type(data)}")
                 return None
@@ -195,20 +178,16 @@ class OnePieceAPIClient:
         """
         logger.info(f"Fetching {len(episode_ids)} episodes in batch")
 
-        # Limit concurrent requests to be respectful to the API
         semaphore = asyncio.Semaphore(5)  # Max 5 concurrent requests
 
         async def fetch_one(episode_id: int) -> Optional[EpisodeFromAPI]:
             async with semaphore:
                 return await self.fetch_episode_by_id(episode_id)
 
-        # Create tasks for all episodes
         tasks = [fetch_one(episode_id) for episode_id in episode_ids]
 
-        # Wait for all tasks to complete
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # Filter out None results and exceptions
         episodes = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
@@ -241,29 +220,3 @@ class OnePieceAPIClient:
         except Exception as e:
             logger.error(f"One Piece API health check failed: {e}")
             return False
-
-
-# Convenience function for quick API access
-async def get_all_episodes() -> APIEpisodeList:
-    """
-    Convenience function to fetch all episodes.
-
-    Returns:
-        List of all episodes from the API
-    """
-    async with OnePieceAPIClient() as client:
-        return await client.fetch_all_episodes()
-
-
-async def get_episode(episode_id: int) -> Optional[EpisodeFromAPI]:
-    """
-    Convenience function to fetch a single episode.
-
-    Args:
-        episode_id: ID of the episode to fetch
-
-    Returns:
-        Episode data if found, None otherwise
-    """
-    async with OnePieceAPIClient() as client:
-        return await client.fetch_episode_by_id(episode_id)
